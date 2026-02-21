@@ -27,18 +27,34 @@ module de1soc_wrapper (
     output        VGA_CLK
 );
 
-    // Default Assignments
+    // KEYs are usually active-low on DE1-SoC
+    logic rst;
+    assign rst = ~KEY[0];
 
-    // LEDs off
-    assign LEDR = 10'b0;
+    logic done;
+    logic [31:0] cycles;
+
+    // Instantiate your clean top
+    top u_top (
+        .clk(CLOCK_50),
+        .rst(rst),
+        .done(done),
+        .total_cycles_out(cycles)
+    );
+
+    // Debug on LEDs
+    assign LEDR[0]   = done;
+    assign LEDR[9:1] = cycles[8:0];
 
     // HEX displays off (active-low)
     assign HEX0 = 7'b1111111;
     assign HEX1 = 7'b1111111;
     assign HEX2 = 7'b1111111;
     assign HEX3 = 7'b1111111;
+    assign HEX4 = 7'b1111111;
+    assign HEX5 = 7'b1111111;
 
-    // VGA outputs black / inactive
+    // VGA black/inactive
     assign VGA_R = 8'b0;
     assign VGA_G = 8'b0;
     assign VGA_B = 8'b0;
