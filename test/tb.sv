@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module sobel_full_system_tb;
+module tb;
 
     // Parameters must match DUT
     parameter WIDTH  = 240;
