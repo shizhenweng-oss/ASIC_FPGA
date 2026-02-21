@@ -1,14 +1,19 @@
-`timescale 1ns/100ps
-
-module top #(
-) (
-    input  logic       a,
-    input  logic       b,
-    output logic       and_o,
-    output logic       xor_o,
-    output logic [2:0] and_or_xor
+// src/top.sv
+module top (
+    input  logic clk,
+    input  logic rst,
+    output logic done,
+    output logic [31:0] total_cycles_out
 );
-    assign and_o = a & b;
-    assign xor_o = a ^ b;
-    assign and_or_xor = {a & b, a | b, a ^ b};
+    sobel_full_system #(
+        .WIDTH(240),
+        .HEIGHT(240),
+        .TOTAL(240*240),
+        .INIT_FILE("image.mif")   // hardware init file
+    ) u_sobel (
+        .clk(clk),
+        .rst(rst),
+        .done(done),
+        .total_cycles_out(total_cycles_out)
+    );
 endmodule
