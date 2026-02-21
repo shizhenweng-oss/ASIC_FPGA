@@ -195,7 +195,7 @@ module image_rom #(
 
         .aclr0(1'b0), .aclr1(1'b0),
         .address_b('0),
-        .clock1(1'b0),
+        .clock1(clk),
         .data_b('0),
         .wren_b(1'b0),
         .rden_b(1'b0),
