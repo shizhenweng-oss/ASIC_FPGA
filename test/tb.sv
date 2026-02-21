@@ -1,99 +1,84 @@
-// test/tb.sv
 `timescale 1ns/1ps
 
-module tb;
+module sobel_full_system_tb;
 
-  // Required by your repo to generate waveforms
-  initial begin
-    $dumpfile("sim_out/wave.vcd");
-    $dumpvars(0, tb);
-  end
+    // Parameters must match DUT
+    parameter WIDTH  = 240;
+    parameter HEIGHT = 240;
+    parameter TOTAL  = WIDTH*HEIGHT;
+    parameter OUTW   = WIDTH - 2;
+    parameter OUTH   = HEIGHT - 2;
+    parameter OUTTOT = OUTW * OUTH;
 
-  // -------------------------
-  // Clock / Reset
-  // -------------------------
-  logic clk = 0;
-  logic rst = 1;
+    // Clock / Reset
+    logic clk;
+    logic rst;
 
-  // 50 MHz clock -> 20 ns period
-  always #10 clk = ~clk;
+    // DUT signals
+    logic done;
+    logic [31:0] total_cycles;
 
-  // DUT outputs
-  logic done;
-  logic [31:0] total_cycles_out;
+    // Instantiate DUT
+    sobel_full_system #(
+        .WIDTH(WIDTH),
+        .HEIGHT(HEIGHT),
+        .TOTAL(TOTAL),
+        .INIT_FILE("image.mif")
+    ) DUT (
+        .clk(clk),
+        .rst(rst),
+        .done(done),
+        .total_cycles_out(total_cycles)
+    );
 
-  // -------------------------
-  // DUT
-  // -------------------------
-  // This assumes you have src/top.sv:
-  // module top(input clk, input rst, output done, output [31:0] total_cycles_out);
-  top dut (
-    .clk(clk),
-    .rst(rst),
-    .done(done),
-    .total_cycles_out(total_cycles_out)
-  );
+    // ================================
+    // Clock Generation (50 MHz)
+    // ================================
+    initial clk = 0;
+    always #10 clk = ~clk;   // 20ns period → 50MHz
 
-  // -------------------------
-  // Run / Timeout control
-  // -------------------------
-  int cycles;
+    // ================================
+    // Simulation Control
+    // ================================
+    integer i;
+    integer outfile;
+    real time_sec;
+    
+    initial begin
+        $display("Starting Sobel Simulation...");
 
-  initial begin
-    // Hold reset for a few cycles
-    repeat (10) @(posedge clk);
-    rst <= 0;
+        rst = 1;
+        #100;
+        rst = 0;
 
-    cycles = 0;
+        // Wait until processing finishes
+        wait(done);
 
-    // Wait until done or timeout
-    while (!done && cycles < 2_000_000) begin
-      @(posedge clk);
-      cycles++;
+        $display("=================================");
+        $display("Sobel Processing Complete");
+        $display("Total Cycles: %d", total_cycles);
+
+        // Compute time (for 50 MHz clock)
+        time_sec = total_cycles / 50_000_000.0;
+        $display("Total Time (seconds): %f", time_sec);
+        $display("=================================");
+
+        // ==========================================
+        // Save output memory to file (binary hex)
+        // ==========================================
+        outfile = $fopen("sobel_output_sim.hex", "w");
+
+        if (outfile == 0) begin
+            $display("ERROR: Could not open output file.");
+        end else begin
+            for (i = 0; i < OUTTOT; i = i + 1) begin
+                $fwrite(outfile, "%02x\n", DUT.output_mem[i]);
+            end
+            $fclose(outfile);
+            $display("Output saved to sobel_output_sim.hex");
+        end
+
+        $stop;
     end
-
-    if (!done) begin
-      $display("FAIL: timeout waiting for done. cycles=%0d", cycles);
-      $finish;
-    end
-
-    $display("DONE asserted. total_cycles_out=%0d, sim_cycles=%0d",
-             total_cycles_out, cycles);
-
-    // Give one extra cycle to settle
-    @(posedge clk);
-
-    // -------------------------
-    // Save output_mem to file (SIMULATION ONLY)
-    // -------------------------
-    // Your sobel_full_system writes ONLY valid pixels:
-    // OUTW=238, OUTH=238 => OUTTOT=56644
-    int OUTW   = 240 - 2;
-    int OUTH   = 240 - 2;
-    int OUTTOT = OUTW * OUTH;
-
-    integer f;
-    int i;
-
-    f = $fopen("sim_out/sobel_output.hex", "w");
-    if (f == 0) begin
-      $display("FAIL: could not open sim_out/sobel_output.hex");
-      $finish;
-    end
-
-    // Access internal memory hierarchically:
-    // top -> sobel_full_system instance name in top.sv must be u_sobel (or adjust below).
-    //
-    // If in your top.sv you instantiated as: sobel_full_system u_sobel (...);
-    // then dut.u_sobel.output_mem[i] is correct.
-    for (i = 0; i < OUTTOT; i++) begin
-      $fdisplay(f, "%02x", dut.u_sobel.output_mem[i]);
-    end
-    $fclose(f);
-
-    $display("Wrote sim_out/sobel_output.hex (%0d bytes)", OUTTOT);
-
-    $finish;
-  end
 
 endmodule
