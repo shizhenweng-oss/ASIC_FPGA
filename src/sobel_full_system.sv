@@ -66,6 +66,7 @@ module window_3x3 #(
         r2c0 <= r2c1;   r2c1 <= r2c2;   r2c2 <= pixel_in;
 
         // raster counters
+        /* verilator lint_off WIDTHEXPAND */
         if (x == WIDTH-1) begin
             x <= '0;
             // Truncate y increment to 31:0, but only the lower bits are needed
@@ -73,7 +74,7 @@ module window_3x3 #(
         end else begin
             x <= x + 1;
         end
-
+        /* verilator lint_on WIDTHEXPAND */
         valid_now <= (x >= 2) && (y >= 2);
         valid_out <= valid_now;
 
