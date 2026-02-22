@@ -68,7 +68,8 @@ module window_3x3 #(
         // raster counters
         if (x == WIDTH-1) begin
             x <= '0;
-            y <= y + 1;
+            // Truncate y increment to 31:0, but only the lower bits are needed
+            y <= y + 32'd1;
         end else begin
             x <= x + 1;
         end
@@ -174,8 +175,8 @@ module image_rom #(
     output logic [7:0] pixel
 );
 
-    (* ramstyle = "M10K" *)
-    (* init_file = "image.mif" *)
+    // REMOVED synthesis attribute 'init_file'
+    // (* ramstyle = "M10K" *)
     logic [7:0] mem [0:TOTAL-1];
 
     always_ff @(posedge clk) begin
@@ -236,28 +237,30 @@ module sobel_full_system #(
     always_ff @(posedge clk) begin
         if (rst) begin
             read_addr     <= '0;
-            in_count      <= '0;
-            out_count     <= '0;
+            // Truncate assignments to signal width
+            in_count      <= {$clog2(TOTAL){1'b0}};
+            out_count     <= {$clog2(OUTTOT){1'b0}};
             done          <= 1'b0;
             total_cycles  <= 32'd0;
         end else begin
-            total_cycles <= total_cycles + 1;
+            total_cycles <= total_cycles + 32'd1;
 
             if (!done) begin
                 // advance through ROM addresses
                 if (in_count < TOTAL-1) begin
-                    in_count  <= in_count + 1;
-                    read_addr <= read_addr + 1;
+                    in_count  <= in_count + {$clog2(TOTAL){1'b1}};
+                    read_addr <= read_addr + {$clog2(TOTAL){1'b1}};
                 end
 
                 // write only valid outputs
                 if (valid_out) begin
                     output_mem[out_count] <= pixel_out;
 
-                    if (out_count == OUTTOT-1) begin
+                    // Cast out_count to match OUTTOT width for comparison
+                    if (out_count == OUTTOT[$clog2(OUTTOT)-1:0]-1) begin
                         done <= 1'b1;
                     end else begin
-                        out_count <= out_count + 1;
+                        out_count <= out_count + {$clog2(OUTTOT){1'b1}};
                     end
                 end
             end
