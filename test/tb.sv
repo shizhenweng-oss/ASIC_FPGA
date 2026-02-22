@@ -45,40 +45,43 @@ module tb;
     real time_sec;
     
     initial begin
-        $display("Starting Sobel Simulation...");
+    $display("Starting Sobel Simulation...");
+    
+    // Enable waveform tracing
+    $dumpfile("sim_out/wave.vcd");
+    $dumpvars(0, tb);
 
-        rst = 1;
-        #100;
-        rst = 0;
+    rst = 1;
+    #100;
+    rst = 0;
 
-        // Wait until processing finishes
-        wait(done);
+    // Wait until processing finishes
+    wait(done);
 
-        $display("=================================");
-        $display("Sobel Processing Complete");
-        $display("Total Cycles: %d", total_cycles);
+    $display("=================================");
+    $display("Sobel Processing Complete");
+    $display("Total Cycles: %d", total_cycles);
 
-        // Compute time (for 50 MHz clock)
-        time_sec = total_cycles / 50_000_000.0;
-        $display("Total Time (seconds): %f", time_sec);
-        $display("=================================");
+    // Compute time (for 50 MHz clock)
+    time_sec = total_cycles / 50_000_000.0;
+    $display("Total Time (seconds): %f", time_sec);
+    $display("=================================");
 
-        // ==========================================
-        // Save output memory to file (binary hex)
-        // ==========================================
-        outfile = $fopen("sobel_output_sim.hex", "w");
+    // ==========================================
+    // Save output memory to file (binary hex)
+    // ==========================================
+    outfile = $fopen("sobel_output_sim.hex", "w");
 
-        if (outfile == 0) begin
-            $display("ERROR: Could not open output file.");
-        end else begin
-            for (i = 0; i < OUTTOT; i = i + 1) begin
-                $fwrite(outfile, "%02x\n", DUT.output_mem[i]);
-            end
-            $fclose(outfile);
-            $display("Output saved to sobel_output_sim.hex");
+    if (outfile == 0) begin
+        $display("ERROR: Could not open output file.");
+    end else begin
+        for (i = 0; i < OUTTOT; i = i + 1) begin
+            $fwrite(outfile, "%02x\n", DUT.output_mem[i]);
         end
-
-        $stop;
+        $fclose(outfile);
+        $display("Output saved to sobel_output_sim.hex");
     end
 
+    $stop;
+end
 endmodule
