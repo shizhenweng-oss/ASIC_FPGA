@@ -247,7 +247,7 @@ module sobel_full_system #(
 
             if (!done) begin
                 // advance through ROM addresses
-                if (in_count < TOTAL-1) begin
+                if (in_count < TOTAL[$clog2(TOTAL)-1:0]-1) begin
                     in_count  <= in_count + {$clog2(TOTAL){1'b1}};
                     read_addr <= read_addr + {$clog2(TOTAL){1'b1}};
                 end
