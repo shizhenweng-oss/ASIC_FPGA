@@ -163,9 +163,7 @@ module sobel_stream_top #(
 
 endmodule
 
-// ============================================================================
-// 4) ROM initialized from MIF (altsyncram ROM)
-// ============================================================================
+
 module image_rom #(
     parameter int WIDTH  = 240,
     parameter int HEIGHT = 240,
@@ -177,33 +175,17 @@ module image_rom #(
     output logic [7:0] pixel
 );
 
-    altsyncram #(
-        .operation_mode("ROM"),
-        .width_a(8),
-        .numwords_a(TOTAL),
-        .widthad_a($clog2(TOTAL)),
-        .outdata_reg_a("CLOCK0"),
-        .init_file(INIT_FILE),
-        .intended_device_family("Cyclone V")
-    ) rom_i (
-        .clock0(clk),
-        .address_a(addr),
-        .q_a(pixel),
-        .rden_a(1'b1),
-        .wren_a(1'b0),
-        .data_a(8'h00),
+    // Infer ROM
+    (* ramstyle = "M10K" *) logic [7:0] mem [0:TOTAL-1];
 
-        .aclr0(1'b0), .aclr1(1'b0),
-        .address_b('0),
-        .clock1(clk),
-        .data_b('0),
-        .wren_b(1'b0),
-        .rden_b(1'b0),
-        .q_b(),
-        .byteena_a(1'b1),
-        .byteena_b(1'b1),
-        .eccstatus()
-    );
+    // Initialize from MIF
+    initial begin
+        $readmemb(INIT_FILE, mem);
+    end
+
+    always_ff @(posedge clk) begin
+        pixel <= mem[addr];
+    end
 
 endmodule
 
