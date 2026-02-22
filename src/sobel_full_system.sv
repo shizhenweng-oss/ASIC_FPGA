@@ -167,21 +167,16 @@ endmodule
 module image_rom #(
     parameter int WIDTH  = 240,
     parameter int HEIGHT = 240,
-    parameter int TOTAL  = WIDTH*HEIGHT,
-    parameter string INIT_FILE = "image.mif"
+    parameter int TOTAL  = WIDTH*HEIGHT
 )(
     input  logic clk,
     input  logic [$clog2(TOTAL)-1:0] addr,
     output logic [7:0] pixel
 );
 
-    // Infer ROM
-    (* ramstyle = "M10K" *) logic [7:0] mem [0:TOTAL-1];
-
-    // Initialize from MIF
-    initial begin
-        $readmemb(INIT_FILE, mem);
-    end
+    (* ramstyle = "M10K" *)
+    (* init_file = "image.mif" *)
+    logic [7:0] mem [0:TOTAL-1];
 
     always_ff @(posedge clk) begin
         pixel <= mem[addr];
@@ -214,8 +209,7 @@ module sobel_full_system #(
     image_rom #(
         .WIDTH(WIDTH),
         .HEIGHT(HEIGHT),
-        .TOTAL(TOTAL),
-        .INIT_FILE(INIT_FILE)
+        .TOTAL(TOTAL)
     ) IMAGE_MEM (
         .clk(clk),
         .addr(read_addr),
